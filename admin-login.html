@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="دخول لوحة تحكم بصمة دعم">
+    <title>دخول المسؤولين | بصمة دعم</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: linear-gradient(135deg, #F8FAFC 0%, #E0E7FF 100%);
+            color: #1A2A44;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            direction: rtl;
+            overflow-x: hidden;
+            padding: 20px;
+        }
+
+        /* Background decoration */
+        .bg-decoration {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .shape {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.1;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .shape-1 {
+            width: 400px;
+            height: 400px;
+            background: #0066CC;
+            top: -100px;
+            right: -100px;
+            animation-delay: 0s;
+        }
+
+        .shape-2 {
+            width: 300px;
+            height: 300px;
+            background: #F4A261;
+            bottom: -50px;
+            left: -100px;
+            animation-delay: 2s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(30px); }
+        }
+
+        .container-login {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 440px;
+        }
+
+        /* Navbar */
+        .navbar-login {
+            background: linear-gradient(135deg, #004488, #0066CC);
+            padding: 16px 0;
+            text-align: center;
+            margin-bottom: 40px;
+            border-radius: 16px 16px 0 0;
+        }
+
+        .navbar-login h1 {
+            color: white;
+            font-size: 24px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .navbar-login i {
+            font-size: 28px;
+        }
+
+        /* Login Card */
+        .login-card {
+            background: white;
+            border-radius: 0 0 16px 16px;
+            box-shadow: 0 20px 60px rgba(0, 102, 204, 0.15);
+            padding: 40px 30px;
+            animation: slideUp 0.4s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card-subtitle {
+            color: #64748B;
+            font-size: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .alert {
+            padding: 14px 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alert.show {
+            display: flex;
+        }
+
+        .alert.success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #10b981;
+        }
+
+        .alert.error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+
+        .alert.warning {
+            background: rgba(249, 115, 22, 0.1);
+            border: 1px solid rgba(249, 115, 22, 0.3);
+            color: #f97316;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: #1A2A44;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px 14px 44px;
+            border: 2px solid #E2E8F0;
+            border-radius: 12px;
+            font-size: 15px;
+            font-family: 'Tajawal', sans-serif;
+            transition: all 0.3s;
+            color: #1A2A44;
+        }
+
+        .form-group input:focus {
+            border-color: #0066CC;
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(0, 102, 204, 0.1);
+        }
+
+        .form-icon {
+            position: absolute;
+            right: 14px;
+            font-size: 18px;
+            color: #0066CC;
+            pointer-events: none;
+        }
+
+        .toggle-password {
+            position: absolute;
+            left: 12px;
+            background: none;
+            border: none;
+            color: #64748B;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 8px;
+            transition: all 0.3s;
+        }
+
+        .toggle-password:hover {
+            color: #0066CC;
+        }
+
+        .form-options {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 28px;
+            font-size: 13px;
+        }
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            color: #64748B;
+            transition: color 0.3s;
+        }
+
+        .remember-me input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #0066CC;
+        }
+
+        .remember-me:hover {
+            color: #1A2A44;
+        }
+
+        .forgot-password {
+            color: #0066CC;
+            text-decoration: none;
+            transition: color 0.3s;
+            font-weight: 600;
+        }
+
+        .forgot-password:hover {
+            color: #004488;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 14px 20px;
+            background: linear-gradient(135deg, #F4A261, #f0c14b);
+            color: #004488;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            font-family: 'Tajawal', sans-serif;
+            cursor: pointer;
+            transition: all 0.4s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 8px 25px rgba(244, 162, 97, 0.3);
+        }
+
+        .btn-login:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(244, 162, 97, 0.4);
+        }
+
+        .btn-login:active {
+            transform: translateY(-1px);
+        }
+
+        .btn-login.loading {
+            pointer-events: none;
+            opacity: 0.8;
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(0, 68, 136, 0.2);
+            border-top-color: #004488;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: none;
+        }
+
+        .btn-login.loading .spinner {
+            display: inline-block;
+        }
+
+        .btn-login.loading .btn-text {
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .card-footer {
+            margin-top: 30px;
+            padding-top: 24px;
+            border-top: 1px solid #E2E8F0;
+            text-align: center;
+        }
+
+        .back-to-site {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #0066CC;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .back-to-site:hover {
+            color: #004488;
+            gap: 12px;
+        }
+
+        .back-to-site i {
+            transition: transform 0.3s;
+        }
+
+        .back-to-site:hover i {
+            transform: translateX(4px);
+        }
+
+        .lockout-screen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 20px;
+            text-align: center;
+            color: white;
+            font-size: 18px;
+        }
+
+        .lockout-screen.show {
+            display: flex;
+        }
+
+        .lockout-screen i {
+            font-size: 64px;
+            color: #ef4444;
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: rotate(0); }
+            25% { transform: rotate(-5deg); }
+            75% { transform: rotate(5deg); }
+        }
+
+        .lockout-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #ef4444;
+        }
+
+        .lockout-timer {
+            font-size: 48px;
+            font-weight: 800;
+            color: #F4A261;
+            font-family: monospace;
+        }
+
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 28px 20px;
+            }
+
+            .navbar-login {
+                margin-bottom: 30px;
+                border-radius: 12px 12px 0 0;
+            }
+
+            .login-card {
+                border-radius: 0 0 12px 12px;
+            }
+
+            .navbar-login h1 {
+                font-size: 20px;
+            }
+
+            .form-group input {
+                padding: 12px 14px 12px 40px;
+                font-size: 14px;
+            }
+        }
+    </style>
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+</head>
+<body>
+    <div class="bg-decoration">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+    </div>
+
+    <div class="container-login">
+        <div class="navbar-login">
+            <h1><i class="fas fa-lock"></i> دخول المسؤولين</h1>
+        </div>
+
+        <div class="login-card">
+            <p class="card-subtitle">أدخل بيانات تسجيل الدخول الخاصة بك</p>
+
+            <div class="alert success" id="alert-success">
+                <i class="fas fa-check-circle"></i>
+                <span id="success-text">تم تسجيل الدخول بنجاح!</span>
+            </div>
+
+            <div class="alert error" id="alert-error">
+                <i class="fas fa-exclamation-circle"></i>
+                <span id="error-text">حدث خطأ</span>
+            </div>
+
+            <div class="alert warning" id="alert-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span id="warning-text">تحذير</span>
+            </div>
+
+            <form onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="email">البريد الإلكتروني</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-envelope form-icon"></i>
+                        <input type="email" id="email" placeholder="admin@example.com" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">كلمة المرور</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock form-icon"></i>
+                        <input type="password" id="password" placeholder="••••••••" required>
+                        <button type="button" class="toggle-password" onclick="togglePasswordVisibility(event)">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-options">
+                    <label class="remember-me">
+                        <input type="checkbox" id="remember">
+                        <span>تذكرني</span>
+                    </label>
+                    <a href="#" class="forgot-password" onclick="handleForgotPassword(event)">نسيت كلمة المرور؟</a>
+                </div>
+
+                <button type="submit" class="btn-login" id="login-btn">
+                    <div class="spinner"></div>
+                    <span class="btn-text"><i class="fas fa-sign-in-alt"></i> دخول</span>
+                </button>
+            </form>
+
+            <div class="card-footer">
+                <a href="index.html" class="back-to-site">
+                    <i class="fas fa-arrow-left"></i> العودة للموقع الرئيسي
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="lockout-screen" id="lockout-screen">
+        <i class="fas fa-lock"></i>
+        <div class="lockout-title">تم تأمين الحساب مؤقتاً</div>
+        <p>بسبب محاولات فاشلة متعددة</p>
+        <div class="lockout-timer" id="lockout-timer">30</div>
+        <p>انتظر قبل المحاولة مجدداً</p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"  defer></script>
+    <script src="supabase-config.js" defer></script>
+    <script src="admin-auth.js" defer></script>
+</body>
+</html>
