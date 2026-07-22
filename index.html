@@ -44,6 +44,9 @@
             <div class="cms-nav-item" data-target="registrations" onclick="switchPage('registrations')">
                 <i class="fas fa-user-plus"></i> <span>طلبات الانضمام</span>
             </div>
+            <div class="cms-nav-item" data-target="messages" onclick="switchPage('messages')">
+                <i class="fas fa-comments"></i> <span>الرسائل</span>
+            </div>
             <div class="cms-nav-item" data-target="ambassadors" onclick="switchPage('ambassadors')">
                 <i class="fas fa-user-shield"></i> <span>سفراء المبادرة</span>
             </div>
@@ -58,6 +61,9 @@
             </div>
              <div class="cms-nav-item" data-target="org_structure" onclick="switchPage('org_structure')">
                 <i class="fas fa-sitemap"></i> <span>الهيكل التنظيمي</span>
+            </div>
+            <div class="cms-nav-item" id="nav-team" data-target="team" onclick="switchPage('team')" style="display:none;">
+                <i class="fas fa-users-cog"></i> <span>إدارة الفريق</span>
             </div>
             <div class="cms-nav-item logout-item" onclick="handleLogout()">
                 <i class="fas fa-sign-out-alt"></i> <span>تسجيل الخروج</span>
@@ -159,6 +165,7 @@
                     <table class="data-table mobile-cards-table">
                         <thead>
                             <tr>
+                                <th>الحالة</th>
                                 <th>الاسم (عربي)</th>
                                 <th>الاسم (إنجليزي)</th>
                                 <th>المحافظة</th>
@@ -171,9 +178,29 @@
                                 <th>الكورسات المطلوبة</th>
                                 <th>المهارات الفنية المحددة</th>
                                 <th>التاريخ</th>
+                                <th>التحكم</th>
                             </tr>
                         </thead>
                         <tbody id="registrations-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="page-messages" class="cms-page">
+                <h1 class="page-title">رسائل المهتمين (الشات الذكي)</h1>
+                <div class="table-responsive">
+                    <table class="data-table mobile-cards-table">
+                        <thead>
+                            <tr>
+                                <th>الحالة</th>
+                                <th>الاسم</th>
+                                <th>الهاتف</th>
+                                <th>الملاحظة</th>
+                                <th>التاريخ</th>
+                                <th>التحكم</th>
+                            </tr>
+                        </thead>
+                        <tbody id="messages-table-body"></tbody>
                     </table>
                 </div>
             </div>
@@ -298,7 +325,53 @@
     </div>
 </div>
 
+            <div id="page-team" class="cms-page">
+                <div class="page-header-action">
+                    <h1 class="page-title">إدارة الفريق والصلاحيات</h1>
+                    <button class="btn-primary" onclick="openTeamModal()"><i class="fas fa-user-plus"></i> دعوة عضو جديد</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table mobile-cards-table">
+                        <thead>
+                            <tr>
+                                <th>الإيميل</th>
+                                <th>الدور الحالي</th>
+                                <th>تاريخ الإضافة</th>
+                                <th>التحكم</th>
+                            </tr>
+                        </thead>
+                        <tbody id="team-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
         </main>
+    </div>
+
+    <div class="modal-overlay" id="team-modal-overlay" onclick="if(event.target === this) closeTeamModal()">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>دعوة عضو جديد للفريق</h3>
+                <button type="button" class="modal-close" onclick="closeTeamModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="team-invite-form" onsubmit="submitInvite(event)">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>الإيميل (لازم يبقى إيميل جيميل صحيح)</label>
+                        <input type="email" id="invite-email" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>الدور</label>
+                        <select id="invite-role" class="form-control" required></select>
+                    </div>
+                    <p style="font-size:13px; color:#888;">هيتبعتله إيميل دعوة يقدر من خلاله يحدد كلمة السر ويدخل الداش بورد بالدور ده.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn-save">إرسال الدعوة</button>
+                    <button type="button" class="btn-cancel" onclick="closeTeamModal()">إلغاء</button>
+                </div>
+            </form>
+        </div>
     </div>
 
  <div class="modal-overlay" id="modal-overlay" onclick="if(event.target === this) closeModal()">

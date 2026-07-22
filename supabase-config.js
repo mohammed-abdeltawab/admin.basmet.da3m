@@ -28,6 +28,7 @@
       'news', 'courses', 'ambassadors', 'partners',
       'registrations', 'site_settings', 'achievements',
       'org_structure', 'org_members', 'tasks', 'chat_messages',
+      'user_roles', 'audit_log', 'chat_leads',
     ];
 
     // ── Wrapper آمن لكل الاستعلامات ──

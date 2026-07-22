@@ -28,7 +28,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // عرض بيانات المسؤول في الهيدر
                 if (document.getElementById('admin-name')) document.getElementById('admin-name').textContent = user.email;
                 if (document.getElementById('avatar')) document.getElementById('avatar').textContent = user.email.charAt(0).toUpperCase();
-                
+
+                // جلب دور المستخدم الحالي (owner/admin/editor/support) وإظهار صفحة إدارة الفريق لو مصرح له
+                try {
+                    const { data: roleRow } = await window.supabaseClient.from('user_roles').select('role').eq('user_id', user.id).single();
+                    window.currentUserRole = roleRow ? roleRow.role : null;
+                } catch (e) {
+                    window.currentUserRole = null;
+                }
+                if (window.currentUserRole === 'owner' || window.currentUserRole === 'admin') {
+                    const navTeam = document.getElementById('nav-team');
+                    if (navTeam) navTeam.style.display = '';
+                }
+
                 // تفعيل لوحة التحكم وسحب البيانات فقط للمصرح لهم
                 loadDashboard();
             } else {
@@ -68,11 +80,13 @@ function switchPage(pageName) {
     if (pageName === 'dashboard') loadDashboard();
     if (pageName === 'settings') loadSiteSettings();
     if (pageName === 'registrations') loadRegistrations();
+    if (pageName === 'messages') loadMessages();
     if (pageName === 'ambassadors') loadAmbassadors();
     if (pageName === 'news') loadNews();
     if (pageName === 'courses') loadCourses();
     if (pageName === 'partners') loadPartners();
     if (pageName === 'org_structure') loadOrgStructure(); // تفعيل جلب بيانات الهيكل التنظيمي
+    if (pageName === 'team') loadTeam();
 }
 
 let govChartInstance = null;
@@ -285,11 +299,14 @@ async function saveSiteSettings(e) {
 async function loadRegistrations() {
     const tbody = document.getElementById('registrations-table-body');
     if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="12">جاري تحميل البيانات الشاملة للمتقدمين...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="13">جاري تحميل البيانات الشاملة للمتقدمين...</td></tr>';
     try {
         const { data, error } = await window.supabaseClient.from('registrations').select('*').order('created_at', { ascending: false });
         if (error) throw error;
         tbody.innerHTML = '';
+        const canApprove = window.currentUserRole === 'owner' || window.currentUserRole === 'admin';
+        const STATUS_LABELS = { pending: 'قيد المراجعة', approved: 'تم القبول', rejected: 'مرفوض' };
+        const STATUS_COLORS = { pending: '#F4A261', approved: 'var(--green)', rejected: 'var(--red)' };
         data.forEach(item => {
             let skills = [];
             if (item.skill_video) skills.push('مونتاج');
@@ -299,8 +316,19 @@ async function loadRegistrations() {
             if (item.skill_social) skills.push('سوشيال media');
             if (item.skill_content) skills.push('كتابة محتوى');
 
+            const status = item.approval_status || 'pending';
+            let controlsHtml = `<span style="color:${STATUS_COLORS[status]}; font-weight:bold;">${STATUS_LABELS[status]}</span>`;
+            if (canApprove) {
+                controlsHtml += `
+                    <div style="margin-top:6px; display:flex; gap:4px;">
+                        <button class="btn-primary" style="background:var(--green); padding:4px 8px; font-size:11px;" onclick="setRegistrationStatus('${item.id}', 'approved')">قبول</button>
+                        <button class="btn-primary" style="background:var(--red); padding:4px 8px; font-size:11px;" onclick="setRegistrationStatus('${item.id}', 'rejected')">رفض</button>
+                    </div>`;
+            }
+
             tbody.innerHTML += `
                 <tr>
+                    <td data-label="الحالة">${controlsHtml}</td>
                     <td data-label="الاسم (عربي)"><strong>${escapeHtml(item.name_ar)}</strong></td>
                     <td data-label="الاسم (إنجليزي)">${escapeHtml(item.name_en || '-')}</td>
                     <td data-label="المحافظة">${escapeHtml(item.governorate || '-')}</td>
@@ -316,7 +344,78 @@ async function loadRegistrations() {
                 </tr>
             `;
         });
-    } catch (err) { tbody.innerHTML = `<tr><td colspan="12" style="color:var(--red);">${err.message}</td></tr>`; }
+    } catch (err) { tbody.innerHTML = `<tr><td colspan="13" style="color:var(--red);">${err.message}</td></tr>`; }
+}
+
+async function setRegistrationStatus(id, status) {
+    try {
+        const { data: { user } } = await window.supabaseClient.auth.getUser();
+        const { error } = await window.supabaseClient.from('registrations').update({
+            approval_status: status,
+            reviewed_by: user?.email || null,
+            reviewed_at: new Date().toISOString(),
+        }).eq('id', id);
+        if (error) throw error;
+        showToast(status === 'approved' ? 'تم قبول الطلب' : 'تم رفض الطلب');
+        loadRegistrations();
+    } catch (e) {
+        showToast('خطأ: ' + e.message, 'error');
+    }
+}
+
+async function loadMessages() {
+    const tbody = document.getElementById('messages-table-body');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="6">جاري التحميل...</td></tr>';
+    try {
+        const { data, error } = await window.supabaseClient.from('chat_leads').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
+        tbody.innerHTML = '';
+        const canDelete = window.currentUserRole === 'owner' || window.currentUserRole === 'admin';
+        (data || []).forEach(item => {
+            const reviewed = !!item.is_reviewed;
+            let controlsHtml = `
+                <button class="btn-primary" style="background:${reviewed ? '#888' : 'var(--green)'}; padding:4px 8px; font-size:11px;" onclick="toggleLeadReviewed('${item.id}', ${!reviewed})">
+                    ${reviewed ? 'إلغاء المتابعة' : 'تمت المتابعة'}
+                </button>`;
+            if (canDelete) {
+                controlsHtml += ` <button class="btn-primary" style="background:var(--red); padding:4px 8px; font-size:11px;" onclick="deleteLead('${item.id}')"><i class="fas fa-trash"></i></button>`;
+            }
+            tbody.innerHTML += `
+                <tr>
+                    <td data-label="الحالة"><span style="color:${reviewed ? 'var(--green)' : '#F4A261'}; font-weight:bold;">${reviewed ? 'تمت المتابعة' : 'جديدة'}</span></td>
+                    <td data-label="الاسم">${escapeHtml(item.name || '-')}</td>
+                    <td data-label="الهاتف">${item.phone ? `<a href="https://wa.me/${item.phone}" target="_blank" style="color:var(--green); font-weight:bold;"><i class="fab fa-whatsapp"></i> ${escapeHtml(item.phone)}</a>` : '-'}</td>
+                    <td data-label="الملاحظة"><small>${escapeHtml(item.note || '-')}</small></td>
+                    <td data-label="التاريخ"><small>${formatDateShort(item.created_at)}</small></td>
+                    <td data-label="التحكم">${controlsHtml}</td>
+                </tr>
+            `;
+        });
+        if ((data || []).length === 0) tbody.innerHTML = '<tr><td colspan="6">لا يوجد رسائل بعد</td></tr>';
+    } catch (err) { tbody.innerHTML = `<tr><td colspan="6" style="color:var(--red);">${err.message}</td></tr>`; }
+}
+
+async function toggleLeadReviewed(id, newValue) {
+    try {
+        const { error } = await window.supabaseClient.from('chat_leads').update({ is_reviewed: newValue }).eq('id', id);
+        if (error) throw error;
+        loadMessages();
+    } catch (e) {
+        showToast('خطأ: ' + e.message, 'error');
+    }
+}
+
+async function deleteLead(id) {
+    if (!confirm('تأكيد حذف الرسالة؟')) return;
+    try {
+        const { error } = await window.supabaseClient.from('chat_leads').delete().eq('id', id);
+        if (error) throw error;
+        showToast('تم الحذف');
+        loadMessages();
+    } catch (e) {
+        showToast('خطأ: ' + e.message, 'error');
+    }
 }
 
 async function loadAmbassadors() {
@@ -747,5 +846,145 @@ function handleLogout() {
         });
     } else {
         window.location.href = 'admin-login.html';
+    }
+}
+
+// ====================== إدارة الفريق والصلاحيات ======================
+
+const ROLE_LABELS = {
+    owner:   'مالك (Owner)',
+    admin:   'أدمن',
+    editor:  'محرر محتوى',
+    support: 'متابع طلبات',
+};
+
+// الدور الحالي يقدر يضيف/يعدل الأدوار دي بس
+function assignableRoles() {
+    if (window.currentUserRole === 'owner') return ['admin', 'editor', 'support'];
+    if (window.currentUserRole === 'admin') return ['editor', 'support'];
+    return [];
+}
+
+async function loadTeam() {
+    const tbody = document.getElementById('team-table-body');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="4"><i class="fas fa-spinner fa-spin"></i></td></tr>';
+    try {
+        const { data, error } = await window.supabaseClient.from('user_roles').select('*').order('created_at', { ascending: true });
+        if (error) throw error;
+
+        tbody.innerHTML = '';
+        (data || []).forEach(member => {
+            const canManage = assignableRoles().includes(member.role) ||
+                (window.currentUserRole === 'owner' && member.role !== 'owner');
+            const isOwnerRow = member.role === 'owner';
+
+            let controlsHtml = '';
+            if (isOwnerRow) {
+                controlsHtml = '<span style="color:#888;">محمي</span>';
+            } else if (canManage) {
+                const roleOptions = assignableRoles().map(r =>
+                    `<option value="${r}" ${r === member.role ? 'selected' : ''}>${ROLE_LABELS[r]}</option>`
+                ).join('');
+                controlsHtml = `
+                    <select class="form-control" style="display:inline-block; width:auto; padding:4px 8px; font-size:12px;" onchange="changeMemberRole('${member.id}', this.value)">
+                        ${roleOptions}
+                    </select>
+                    <button class="btn-primary" style="background:var(--red); padding:4px 8px; font-size:12px; margin-right:6px;" onclick="removeMember('${member.id}')"><i class="fas fa-trash"></i></button>
+                `;
+            } else {
+                controlsHtml = `<span>${ROLE_LABELS[member.role] || member.role}</span>`;
+            }
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${escapeHtml(member.email || '-')}</td>
+                <td>${ROLE_LABELS[member.role] || member.role}</td>
+                <td>${formatDateShort(member.created_at)}</td>
+                <td>${controlsHtml}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        if ((data || []).length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4">لا يوجد أعضاء بعد</td></tr>';
+        }
+    } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="4">حصل خطأ في تحميل الفريق</td></tr>';
+        showToast('خطأ في تحميل الفريق: ' + e.message, 'error');
+    }
+}
+
+function openTeamModal() {
+    const roles = assignableRoles();
+    if (roles.length === 0) {
+        showToast('مالكش صلاحية إضافة أعضاء', 'error');
+        return;
+    }
+    const select = document.getElementById('invite-role');
+    select.innerHTML = roles.map(r => `<option value="${r}">${ROLE_LABELS[r]}</option>`).join('');
+    document.getElementById('invite-email').value = '';
+    document.getElementById('team-modal-overlay').classList.add('show');
+}
+
+function closeTeamModal() {
+    document.getElementById('team-modal-overlay').classList.remove('show');
+}
+
+async function submitInvite(e) {
+    e.preventDefault();
+    const email = document.getElementById('invite-email').value.trim();
+    const role = document.getElementById('invite-role').value;
+    if (!email || !role) return;
+
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'جاري الإرسال...'; }
+
+    try {
+        const { data: { session } } = await window.supabaseClient.auth.getSession();
+        if (!session) throw new Error('انتهت الجلسة، سجّل دخول تاني');
+
+        const res = await fetch('https://unmmontcbergytlqfpbn.supabase.co/functions/v1/invite-user', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({ email, role }),
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.error || 'حصل خطأ غير متوقع');
+
+        showToast('تم إرسال الدعوة بنجاح');
+        closeTeamModal();
+        loadTeam();
+    } catch (err) {
+        showToast(err.message, 'error');
+    } finally {
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'إرسال الدعوة'; }
+    }
+}
+
+async function changeMemberRole(id, newRole) {
+    try {
+        const { error } = await window.supabaseClient.from('user_roles').update({ role: newRole }).eq('id', id);
+        if (error) throw error;
+        showToast('تم تحديث الدور بنجاح');
+        loadTeam();
+    } catch (e) {
+        showToast('خطأ: ' + e.message, 'error');
+        loadTeam();
+    }
+}
+
+async function removeMember(id) {
+    if (!confirm('هل أنت متأكد من إزالة العضو ده من الفريق؟')) return;
+    try {
+        const { error } = await window.supabaseClient.from('user_roles').delete().eq('id', id);
+        if (error) throw error;
+        showToast('تم الحذف بنجاح');
+        loadTeam();
+    } catch (e) {
+        showToast('خطأ: ' + e.message, 'error');
     }
 }
